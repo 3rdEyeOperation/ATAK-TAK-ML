@@ -1,11 +1,8 @@
-<<<<<<< HEAD
-# ATAK-CAM-ML
-This is camera app that use ML and yolo for identify whatever trained model.
-=======
+# ATAK-TAK-ML
+
 TAKML Image Recognition Plugin
 
-_________________________________________________________________
-PURPOSE AND CAPABILITIES
+## Purpose and Capabilities
 
 This is an example ATAK plugin built on top of TAK-ML that allows you to load an image
 classification model in any TAK-ML supported format (e.g., TensorFlow, PyTorch) and
@@ -13,33 +10,24 @@ employ it within the app to allow users to take pictures, and see the classifica
 
 Please see 'Importing TAK ML Models.pdf' for setup.
 
-_________________________________________________________________
-STATUS
+## Status
 
 Beta
 
-_________________________________________________________________
-POINT OF CONTACTS
+## Point of Contact
 
 Nate Soule (nate.soule@raytheon.com)
 
-_________________________________________________________________
-PORTS REQUIRED
+## Ports Required
 
 N/A
 
-_________________________________________________________________
-EQUIPMENT REQUIRED
+## Equipment Required
 
-_________________________________________________________________
-EQUIPMENT SUPPORTED
+## Equipment Supported
 
-_________________________________________________________________
-COMPILATION
+## Compilation
 
-_________________________________________________________________
-DEVELOPER NOTES
+## Developer Notes
 
-_________________________________________________________________
-SETUP
->>>>>>> 0535a1a
+## Setup
