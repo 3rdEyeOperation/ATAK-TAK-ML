@@ -1,0 +1,21 @@
+# Normalize line endings so gradlew never appears "locally modified" due to
+# git's automatic CRLF conversion (core.autocrlf, eol settings, etc.).
+
+# Default: normalize all text files to LF in the repository
+* text=auto eol=lf
+
+# Shell scripts must always be LF (executable on Unix/macOS/Linux)
+*.sh text eol=lf
+gradlew text eol=lf
+
+# Windows batch files must always be CRLF
+*.bat text eol=crlf
+gradlew.bat text eol=crlf
+
+# Binary files — never convert
+*.jar binary
+*.aar binary
+*.apk binary
+*.png binary
+*.jks binary
+*.keystore binary
