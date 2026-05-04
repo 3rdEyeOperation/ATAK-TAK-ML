@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">Generic Image Recognition</string>
+    <!-- description -->
+    <string name="app_desc">Generic Image Recognition</string>
+    <string name="backButtonText">back</string>
+    <string name="confirm">confirm</string>
+    <string name="processing_request">processing request</string>
+    <string name="default_confidence_threshold">0.7</string>
+    <string-array name="test_array">
+        <item>Mercury</item>
+        <item>Venus</item>
+        <item>Mars</item>
+    </string-array>
+
+    <string name="permission_warning">This application requires the permissions that were previously denied to run, please select \'Permit Manually\' to go to the settings screen.\n\nSelect Permissions -&gt; Enable all listed permissions</string>
+    <string name="permit_manually">Permit Manually</string>
+    <string name="bad_things">bad things will happen because this plugin does not have the right permissions.   Please unload and reload the plugins and provide the correct permissions.</string>
+
+</resources>

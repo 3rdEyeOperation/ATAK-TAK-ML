@@ -1,0 +1,407 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+// PLUGIN_VERSION is the common version name when describing the plugin.
+// ATAK_VERSION   is for the version of ATAK this plugin should be compatible
+//                with some examples include 3.11.0, 3.11.0.civ 3.11.1.fvey
+//
+////////////////////////////////////////////////////////////////////////////////
+
+buildscript {
+
+    ext.PLUGIN_VERSION = "1.0"
+    ext.ATAK_VERSION = "5.0.0"
+    
+    def takdevVersion = '2.+'
+
+    def getValueFromPropertiesFile = { propFile, key ->
+        if(!propFile.isFile() || !propFile.canRead())
+            return null
+        def prop = new Properties()
+        def reader = propFile.newReader()
+        try {
+            prop.load(reader)
+        } finally {
+            reader.close()
+        }
+        return prop.get(key)
+    }
+
+    def getProperty = { name, defValue ->
+        def prop = project.properties[name] ?:
+                getValueFromPropertiesFile(project.rootProject.file('local.properties'), name)
+        return (null == prop) ? defValue : prop
+    }
+
+    def urlKey = 'takrepo.url'
+
+    ext.isDevKitEnabled = { ->
+        return getProperty(urlKey, null) != null
+    }
+
+    ext.takrepoUrl = getProperty(urlKey, 'https://localhost/')
+    ext.takrepoUser = getProperty('takrepo.user', 'invalid')
+    ext.takrepoPassword = getProperty('takrepo.password', 'invalid')
+    ext.takdevPlugin = getProperty('takdev.plugin', "${rootDir}/../../atak-gradle-takdev.jar")
+
+    repositories {
+        mavenCentral()
+        google()
+        mavenCentral()
+        mavenLocal()
+        maven { url "local-repo" }
+        maven {
+            url "https://jitpack.io"
+        }
+        maven {
+            url = takrepoUrl
+            credentials {
+                username = takrepoUser
+                password = takrepoPassword
+            }
+        }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.4.2'
+        if(isDevKitEnabled()) {
+            classpath "com.atakmap.gradle:atak-gradle-takdev:${takdevVersion}"
+        } else {
+            classpath files(takdevPlugin)
+        }
+    }
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+        google()
+        mavenCentral()
+        mavenLocal()
+        maven {
+            url "https://jitpack.io"
+        }
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'atak-takdev-plugin'
+
+// Attempt to get a suitable version name for the plugin based on
+// either a git or svn repository
+def getVersionName() {
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-parse', '--short=8', 'HEAD'
+            standardOutput = stdout
+        }
+        def describe = stdout.toString().trim()
+        println("versionName[git]: $describe")
+        return describe
+    } catch (Exception ignored) {
+        println("error occured, using revision of 1")
+        return 1
+    }
+}
+
+
+// Attempt to get a suitable version code for the plugin based on
+// either a git or svn repository
+def getVersionCode() {
+    try {
+        new ByteArrayOutputStream().withStream { os ->
+            def result = exec {
+                executable = 'git'
+                args = ['show', '-s', '--format=%ct']
+                standardOutput = os
+                ignoreExitValue = true
+            }
+
+            def outputAsString = os.toString()
+            ext.revision = "$outputAsString".toInteger()
+
+            println("version[git]: $revision")
+        }
+    } catch (Exception ignored) {
+        println("error occured, using revision of 1")
+        ext.revision = 1
+    }
+
+    return revision
+}
+
+android {
+    compileSdkVersion 33
+    buildToolsVersion "30.0.2"
+
+    dexOptions {
+        jumboMode = true
+    }
+
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
+
+    lintOptions {
+        checkReleaseBuilds true
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError true
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file("${buildDir}/android_keystore")
+            storePassword "tnttnt"
+            keyAlias "wintec_mapping"
+            keyPassword "tnttnt"
+        }
+        release {
+            storeFile file("${buildDir}/android_keystore")
+            storePassword "tnttnt"
+            keyAlias "wintec_mapping"
+            keyPassword "tnttnt"
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+            matchingFallbacks = ['sdk']
+        }
+
+        release {
+            minifyEnabled true
+            proguardFile 'proguard-gradle.txt'
+            signingConfig signingConfigs.release
+            matchingFallbacks = ['odk']
+        }
+    }
+
+    flavorDimensions "application"
+
+    productFlavors {
+        mil {
+            getIsDefault().set(true)
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".MIL"]
+        }
+        civ {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".CIV"]
+        }
+        fvey {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".FVEY"]
+        }
+        aus {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".AUS"]
+            matchingFallbacks = 'fvey'
+        }
+        nzl {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".NZL"]
+            matchingFallbacks = 'fvey'
+        }
+        prt {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".PRT"]
+        }
+        est {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".EST"]
+            matchingFallbacks = 'fvey'
+        }
+        nor {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".NOR"]
+        }
+        hun {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".HUN"]
+        }
+        bel {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".BEL"]
+            matchingFallbacks = 'fvey'
+        }
+        gov {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".CIV"]  // CIV API with possible distributiion restrictions (see PluginTemplate)
+        }
+        swe {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".SWE"]
+        }
+        natosof {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".NATOSOF"]
+        }
+        gbr {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".GBR"]
+            matchingFallbacks = 'fvey'
+        }
+        can {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".CAN"]
+            matchingFallbacks = 'fvey'
+        }
+        intl {
+            dimension "application"
+            manifestPlaceholders = [atakApiVersion: "com.atakmap.app@" + ATAK_VERSION + ".INTL"]
+            matchingFallbacks = 'fvey'
+        }
+    }
+
+    packagingOptions {
+        exclude 'META-INF/INDEX.LIST'
+    }
+
+    sourceSets {
+        main {
+            setProperty("archivesBaseName", "ATAK-Plugin-" + rootProject.name + "-" + PLUGIN_VERSION + "-" + getVersionName() + "-" + ATAK_VERSION)
+            java {
+                srcDirs 'src/main/java', 'src/test'
+            }
+            defaultConfig.versionCode = getVersionCode()
+            defaultConfig.versionName = PLUGIN_VERSION + " (" + getVersionName() + ") - [" + ATAK_VERSION + "]"
+        }
+
+        // Move the tests to tests/java, tests/res, etc...
+        //instrumentTest.setRoot('tests')
+
+        // Move the build types to build-types/<type>
+        // For instance, build-types/debug/java, build-types/debug/AndroidManifest.xml, ...
+        // This moves them out of them default location under src/<type>/... which would
+        // conflict with src/ being used by the main sourcesd set.
+        // Adding new build types or product flavors should be accompanied
+        // by a similar customization.
+        debug.setRoot('build-types/debug')
+        release.setRoot('build-types/release')
+
+    }
+
+    defaultConfig {
+        minSdkVersion 28
+        targetSdkVersion 33
+        ndk {
+            abiFilters "armeabi-v7a", "arm64-v8a", "x86"
+        }
+    }
+
+    packagingOptions {
+        pickFirst 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/INDEX.LIST'
+        exclude 'META-INF/io.netty.versions.properties'
+        exclude 'META-INF/ASL-2.0.txt'
+        exclude 'META-INF/LGPL-3.0.txt'
+        exclude 'gdal/data/*'
+        exclude 'com/healthmarketscience/jackcess/*'
+        exclude 'org/achartengine/image/*'
+        exclude 'com/partech/pgscmedia/*'
+        exclude 'gov/nasa/worldwind/util/glu/*'
+        exclude 'com/atakmap/android/maps/*'
+
+        // Extract native libraries from the APK - required for plugin loading
+        jniLibs.useLegacyPackaging true
+    }
+
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'androidx.core') {
+            details.useVersion "1.8.0"
+        }
+        if (details.requested.group == 'androidx.lifecycle') {
+            details.useVersion "2.5.1"
+        }
+        if (details.requested.group == 'androidx.fragment') {
+            details.useVersion "1.5.5"
+        }
+    }
+}
+
+configurations.implementation {
+    exclude group: 'androidx.core', module: 'core-ktx'
+    exclude group: 'androidx.core', module: 'core'
+    exclude group: 'androidx.fragment', module: 'fragment'
+    exclude group: 'androidx.lifecycle', module: 'lifecycle'
+    exclude group: 'androidx.lifecycle', module: 'lifecycle-process'
+}
+
+ext {
+    oltu_version = "1.0.2"
+    retrofit_version = "2.7.1"
+    junit_version = "4.12"
+    threetenbp_version = "1.3.5"
+    json_fire_version = "1.8.0"
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: '*.jar')
+
+    // TAK ML Dependencies
+    implementation "com.squareup.retrofit2:retrofit:2.7.1"
+    implementation "com.squareup.retrofit2:converter-scalars:2.7.1"
+    implementation "com.squareup.retrofit2:converter-gson:2.7.1"
+    implementation "io.swagger.core.v3:swagger-annotations:2.2.15"
+    implementation "org.json:json:20180130"
+    implementation "io.gsonfire:gson-fire:1.8.0"
+    implementation "org.threeten:threetenbp:1.3.5"
+    implementation group: 'javax.annotation', name: 'javax.annotation-api', version: '1.3.2'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.2'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.21.1'
+    implementation 'org.slf4j:slf4j-api:1.7.25'
+    implementation group: 'commons-io', name: 'commons-io', version: '2.13.0'
+    implementation 'com.celeral:log4j2-android:1.0.0'
+
+    implementation('androidx.camera:camera-lifecycle:1.2.3'){
+        exclude module: 'collection'
+        // this is an example of a local exclude since androidx.core is supplied by core atak
+        exclude module: 'core'
+        exclude module: 'lifecycle'
+        exclude module: 'core-common'
+        exclude module: 'collection'
+        exclude module: 'customview'
+    }
+    implementation('androidx.camera:camera-view:1.2.3'){
+        exclude module: 'collection'
+        // this is an example of a local exclude since androidx.core is supplied by core atak
+        exclude module: 'core'
+        exclude module: 'lifecycle'
+        exclude module: 'core-common'
+        exclude module: 'collection'
+        exclude module: 'customview'
+    }
+    implementation('androidx.camera:camera-camera2:1.2.3'){
+        exclude module: 'collection'
+        // this is an example of a local exclude since androidx.core is supplied by core atak
+        exclude module: 'core'
+        exclude module: 'lifecycle'
+        exclude module: 'core-common'
+        exclude module: 'collection'
+        exclude module: 'customview'
+    }
+
+    implementation files("libs/takml-android-aar-2.1.aar")
+    implementation files("libs/pytorch-lite-1.13.0.aar")
+    implementation files("libs/tflite-2.9.0.aar")
+
+    /// Pytorch Dependencies
+    //implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+    implementation('org.pytorch:pytorch_android_lite:1.13.0'){
+        exclude group : 'androidx.*'
+    }
+    implementation('org.pytorch:pytorch_android_torchvision_lite:1.13.0'){
+        exclude group : 'androidx.*'
+    }
+
+    /// TF Lite Dependencies
+    implementation 'org.tensorflow:tensorflow-lite-task-vision:0.4.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.9.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu-delegate-plugin:0.4.0'
+}
+
