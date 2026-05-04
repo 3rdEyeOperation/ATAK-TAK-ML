@@ -1,0 +1,69 @@
+# CI workflow – runs unit tests and assembles a CIV debug APK on every push/PR to main.
+#
+# Prerequisites (repository secrets):
+#   ATAK_MAIN_JAR_B64      – base64-encoded ATAK SDK main.jar
+#   ATAK_TAKDEV_JAR_B64    – base64-encoded atak-gradle-takdev.jar
+#   ATAK_KEYSTORE_B64      – base64-encoded android_keystore (TAK community debug keystore)
+#
+# See README.md § "CI / GitHub Actions" for instructions on encoding and uploading these files.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Test & build debug APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout plugin source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle files
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Decode ATAK SDK files from repository secrets
+        env:
+          ATAK_MAIN_JAR_B64: ${{ secrets.ATAK_MAIN_JAR_B64 }}
+          ATAK_TAKDEV_JAR_B64: ${{ secrets.ATAK_TAKDEV_JAR_B64 }}
+          ATAK_KEYSTORE_B64: ${{ secrets.ATAK_KEYSTORE_B64 }}
+        run: |
+          # app/libs/main.jar                  – ATAK SDK classes (compileOnly fileTree)
+          # app/libs/atak-gradle-takdev.jar    – takdev Gradle plugin loaded by buildscript
+          # app/build/android_keystore         – signing keystore (matches signingConfigs path)
+          mkdir -p app/libs app/build
+          printf '%s' "$ATAK_MAIN_JAR_B64"   | base64 -d > app/libs/main.jar
+          printf '%s' "$ATAK_TAKDEV_JAR_B64" | base64 -d > app/libs/atak-gradle-takdev.jar
+          printf '%s' "$ATAK_KEYSTORE_B64"   | base64 -d > app/build/android_keystore
+
+      - name: Run unit tests
+        run: ./gradlew test
+
+      - name: Assemble CIV debug APK
+        run: ./gradlew assembleCivDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-${{ github.sha }}
+          path: app/build/outputs/apk/civ/debug/*.apk
+          retention-days: 14

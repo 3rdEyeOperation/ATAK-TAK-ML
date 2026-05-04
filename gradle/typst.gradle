@@ -1,0 +1,26 @@
+/**
+ * typst.gradle — version helpers for ATAK plugin builds.
+ *
+ * Provides getVersionCode() and getVersionName() used in app/build.gradle.
+ * Uses the git history when available; falls back to date-based values for
+ * shallow clones or CI trees that don't have a .git directory.
+ */
+
+ext.getVersionCode = {
+    try {
+        def count = "git rev-list --count HEAD".execute([], project.rootDir).text.trim()
+        def n = count?.isInteger() ? count.toInteger() : 0
+        return n > 0 ? n : new Date().format('yyyyMMdd').toInteger()
+    } catch (ignored) {
+        return new Date().format('yyyyMMdd').toInteger()
+    }
+}
+
+ext.getVersionName = {
+    try {
+        def tag = "git describe --tags --always --dirty".execute([], project.rootDir).text.trim()
+        return (tag && !tag.isEmpty()) ? tag : new Date().format('yyyyMMdd')
+    } catch (ignored) {
+        return new Date().format('yyyyMMdd')
+    }
+}

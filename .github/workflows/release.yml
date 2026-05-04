@@ -1,0 +1,73 @@
+# Release workflow – builds a signed CIV release APK and attaches it to a GitHub Release.
+#
+# Triggered by pushing a version tag, e.g.:
+#   git tag v1.0.0 && git push origin v1.0.0
+#
+# Prerequisites (repository secrets) – same set as the CI workflow:
+#   ATAK_MAIN_JAR_B64      – base64-encoded ATAK SDK main.jar
+#   ATAK_TAKDEV_JAR_B64    – base64-encoded atak-gradle-takdev.jar
+#   ATAK_KEYSTORE_B64      – base64-encoded android_keystore
+#
+# Notes on ProGuard / R8:
+#   The atak-takdev plugin supports an optional -applymapping file passed via the
+#   atak.proguard.mapping JVM system property.  When that property is absent the
+#   build completes with R8 running a fresh obfuscation pass, which is acceptable
+#   for community / CI builds.  For a TPC-aligned production APK, supply the real
+#   mapping from a takrepo pipeline build.
+#
+# See README.md § "CI / GitHub Actions" for full setup instructions.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build & publish release APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to create/upload GitHub Release assets
+
+    steps:
+      - name: Checkout plugin source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle files
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Decode ATAK SDK files from repository secrets
+        env:
+          ATAK_MAIN_JAR_B64: ${{ secrets.ATAK_MAIN_JAR_B64 }}
+          ATAK_TAKDEV_JAR_B64: ${{ secrets.ATAK_TAKDEV_JAR_B64 }}
+          ATAK_KEYSTORE_B64: ${{ secrets.ATAK_KEYSTORE_B64 }}
+        run: |
+          mkdir -p app/libs app/build
+          printf '%s' "$ATAK_MAIN_JAR_B64"   | base64 -d > app/libs/main.jar
+          printf '%s' "$ATAK_TAKDEV_JAR_B64" | base64 -d > app/libs/atak-gradle-takdev.jar
+          printf '%s' "$ATAK_KEYSTORE_B64"   | base64 -d > app/build/android_keystore
+
+      - name: Assemble CIV release APK
+        # Pass an empty applymapping so R8 completes without takrepo mapping.
+        # For a TPC-aligned build replace /dev/null with the real mapping file.
+        run: ./gradlew assembleCivRelease -Datak.proguard.mapping=/dev/null
+
+      - name: Create GitHub Release and upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/civ/release/*.apk
+          generate_release_notes: true
