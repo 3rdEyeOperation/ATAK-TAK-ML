@@ -1,0 +1,18 @@
+# Template for local Gradle properties — copy/merge into gradle.properties as needed.
+# Do NOT commit secrets or machine-specific paths to the tracked gradle.properties.
+
+org.gradle.jvmargs=-Xmx4096m
+android.useAndroidX=true
+android.defaults.buildfeatures.aidl=true
+android.suppressUnsupportedCompileSdk=36
+
+# JDK 17 is required by Android Gradle Plugin 8.x.
+# Update this path to match your JDK 17 installation, or remove this line
+# if JAVA_HOME already points to JDK 17.
+#
+# Linux (OpenJDK / Temurin):
+#   org.gradle.java.home=/usr/lib/jvm/temurin-17-jdk-amd64
+# macOS (Temurin):
+#   org.gradle.java.home=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
+# Windows (Temurin):
+#   org.gradle.java.home=C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.x.x-hotspot

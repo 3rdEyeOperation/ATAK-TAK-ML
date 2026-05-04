@@ -1,1 +1,23 @@
+pluginManagement {
+    plugins {
+        id 'com.android.application' version '8.8.2'
+    }
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = "https://jitpack.io" }
+    }
+}
+
+// Simple settings file – dependency resolution is handled in app/build.gradle's
+// buildscript block following the canonical ATAK plugin template.
 include ':app'
+rootProject.name = "ATAK-TAK-ML"
