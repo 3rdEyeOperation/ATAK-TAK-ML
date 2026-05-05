@@ -14,7 +14,7 @@ import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
+import com.atakmap.coremap.log.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
