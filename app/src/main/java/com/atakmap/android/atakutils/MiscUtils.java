@@ -30,7 +30,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.res.Resources;
-import android.util.Log;
+import com.atakmap.coremap.log.Log;
 import android.widget.Toast;
 
 import com.atakmap.android.maps.MapItem;
@@ -65,8 +65,8 @@ public class MiscUtils {
         if (timeFields.length != 2) {
             Log.w(TAG, "Invalid time '" + time + "', so setting last seen time to 0");
         } else {
-            hour = Integer.valueOf(timeFields[0]);
-            minute = Integer.valueOf(timeFields[1]);
+            hour = Integer.parseInt(timeFields[0]);
+            minute = Integer.parseInt(timeFields[1]);
         }
 
         String [] dateFields = date.split("/");
@@ -77,9 +77,9 @@ public class MiscUtils {
             Log.w(TAG, "Invalid date '" + date + "', so setting date to default");
         } else {
             // In Java, months start at 0
-            month = Integer.valueOf(dateFields[0]) - 1;
-            day = Integer.valueOf(dateFields[1]);
-            year = Integer.valueOf(dateFields[2]);
+            month = Integer.parseInt(dateFields[0]) - 1;
+            day = Integer.parseInt(dateFields[1]);
+            year = Integer.parseInt(dateFields[2]);
         }
 
         // ** Use the time zone where the program is currently running.

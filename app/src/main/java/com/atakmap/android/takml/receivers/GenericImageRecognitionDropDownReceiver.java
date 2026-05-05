@@ -80,7 +80,6 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
     private final AtomicReference<Bitmap> image = new AtomicReference<>();
     private TextView predictionResultsDisplay;
     private TextView confidenceResultsDisplay;
-    private TextView connectionStatusDisplay;
     private Handler mHandler;
     private Button settingsButton, sendButton;
     private ProgressBar pendingBar;
@@ -111,7 +110,7 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
                 fis.read(bytes);
                 imageView.setImageBitmap(BitmapFactory.decodeByteArray(bytes, 0, bytes.length));
             } catch (Exception e) {
-                android.util.Log.e(TAG, "Could not find file, applying image from intent", e);
+                Log.e(TAG, "Could not find file, applying image from intent", e);
                 imageView.setImageBitmap(bitmap);
             }
             image.set(bitmap);
@@ -132,33 +131,32 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
     };
 
     private void runPrediction() {
-        imageView.buildDrawingCache();
-        Bitmap bitmap = imageView.getDrawingCache();
+        Bitmap bitmap = Bitmap.createBitmap(imageView.getWidth(), imageView.getHeight(), Bitmap.Config.ARGB_8888);
+        imageView.draw(new Canvas(bitmap));
         pendingBar.setVisibility(View.VISIBLE);
         predictionResultsDisplay.setText("");
         confidenceResultsDisplay.setText("");
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
         byte[] bitmapBytes = stream.toByteArray();
-        imageView.destroyDrawingCache();
 
-        android.util.Log.d(TAG, "running prediction");
+        Log.d(TAG, "running prediction");
         takmlExecutor.executePrediction(bitmapBytes, new MXExecuteModelCallback() {
             @Override
             public void modelResult(List<? extends TakmlResult> takmlResults, boolean success, String modelType) {
-                android.util.Log.d(TAG, "Got execute reply.");
+                Log.d(TAG, "Got execute reply.");
                 if(takmlResults.size() == 0){
                     pendingBar.setVisibility(View.GONE);
                     predictionResultsDisplay.setText("No detected Results");
-                    android.util.Log.e(TAG, "Results are null");
+                    Log.e(TAG, "Results are null");
                     return;
                 }
                 if (!success) {
-                    android.util.Log.e(TAG, "Could not execute request");
+                    Log.e(TAG, "Could not execute request");
                     return;
                 }
 
-                android.util.Log.d(TAG, "modelResult: " + takmlResults.size());
+                Log.d(TAG, "modelResult: " + takmlResults.size());
 
                 ProcessingParams processingParams = takmlExecutor.getSelectedModel().getProcessingParams();
                 int outputWidth = 420;
@@ -192,10 +190,8 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
                         confidenceResultsDisplay.setText(stringBuilder);
 
                     }else{
-                        imageView.buildDrawingCache();
-                        Bitmap bmap = imageView.getDrawingCache();
-                        Bitmap bmp2 = bmap.copy(bmap.getConfig(), true);
-                        imageView.destroyDrawingCache();
+                        Bitmap bmp2 = Bitmap.createBitmap(imageView.getWidth(), imageView.getHeight(), Bitmap.Config.ARGB_8888);
+                        imageView.draw(new Canvas(bmp2));
                         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bmp2, finalOutputWidth, finalOutputHeight,
                                 true);
                         Canvas canvas = new Canvas(resizedBitmap);
@@ -236,7 +232,7 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
                             mPaintText.setStrokeWidth(0);
                             mPaintText.setStyle(Paint.Style.FILL);
                             mPaintText.setTextSize(32);
-                            canvas.drawText(String.format("%s", objectDetection.getLabel()), rect.left + OBJECT_DETECTION_TEXT_X, rect.top + OBJECT_DETECTION_TEXT_Y, mPaintText);
+                            canvas.drawText(objectDetection.getLabel(), rect.left + OBJECT_DETECTION_TEXT_X, rect.top + OBJECT_DETECTION_TEXT_Y, mPaintText);
                         }
                         pendingBar.setVisibility(View.GONE);
                         imageView.setImageBitmap(resizedBitmap);
@@ -245,7 +241,7 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
 
                     Toast.makeText(pluginContext, stringBuilder.toString(),
                             Toast.LENGTH_SHORT).show();
-                    android.util.Log.d(TAG, "Finished processing prediction result");
+                    Log.d(TAG, "Finished processing prediction result");
                 });
 
 
@@ -259,7 +255,7 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
             modelBytes = new byte[modelInputStream.available()];
             modelInputStream.read(modelBytes);
         } catch (IOException e) {
-            android.util.Log.e(TAG, "Could not read model from Assets", e);
+            Log.e(TAG, "Could not read model from Assets", e);
         }
         return modelBytes;
     }
@@ -275,7 +271,7 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
             }
             return ret;
         } catch (IOException e) {
-            android.util.Log.e(TAG, "Could not read \"" + name + "\"  from Assets", e);
+            Log.e(TAG, "Could not read \"" + name + "\"  from Assets", e);
         }
         return null;
     }
@@ -289,7 +285,7 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
             }
             return result.toString();
         } catch (IOException e) {
-            android.util.Log.e(TAG, "Could not read \"" + name + "\"  from Assets", e);
+            Log.e(TAG, "Could not read \"" + name + "\"  from Assets", e);
         }
         return null;
     }
@@ -474,7 +470,7 @@ public class GenericImageRecognitionDropDownReceiver extends DropDownReceiver im
             takeNewImageButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    android.util.Log.d(TAG, "onClick: Camera button clicked");
+                    Log.d(TAG, "onClick: Camera button clicked");
                     cdl.register(getMapView().getContext(), cdr);
                     startCamera();
                 }
